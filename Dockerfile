@@ -17,6 +17,9 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
 WORKDIR /app
 COPY --from=build /app/publish .
 
+# Set environment to Production explicitly
+ENV ASPNETCORE_ENVIRONMENT=Production
+
 # Expose port and run
 EXPOSE 8080
 EXPOSE 443
