@@ -6,6 +6,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
+
+Console.WriteLine($"Environment: {builder.Environment.EnvironmentName}");
+
 if (builder.Environment.IsProduction())
 {
     // Get redisconnectionstring from Env
@@ -17,7 +20,6 @@ if (builder.Environment.IsProduction())
         throw new RedisException("Redis connection string not found in environment variables or configuration");
     }
 
-    // Use ManagedIdentity to authenticate with Azure Redis
     builder.Services.AddStackExchangeRedisCache(options =>
     {
         options.Configuration = redisConnString;
