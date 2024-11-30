@@ -10,11 +10,11 @@
     },
     "variables": {
         "location": "centralus",
-        "acrName": "pixelboardacr",
+        "acrName": "autocontentacr",
         "storageAccountName": "[format('{0}store', parameters('projectName'))]",
         "keyVaultName": "[format('{0}kv', parameters('projectName'))]",
         "logAnalyticsName": "[format('{0}logs', parameters('projectName'))]",
-        "containerAppEnvName": "[format('{0}env', parameters('projectName'))]",
+        "containerAppEnvName": "[format('autocontentenv', parameters('projectName'))]",
         "managedIdentityName": "[format('{0}id', parameters('projectName'))]",
         "containerAppName": "[format('{0}app', parameters('projectName'))]",
         "redisCacheName": "[format('{0}cache', parameters('projectName'))]"
@@ -84,7 +84,7 @@
                 }
             },
             "properties": {
-                "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', variables('containerAppEnvName'))]",
+                "managedEnvironmentId": "[resourceId('autocontent', 'Microsoft.App/managedEnvironments', variables('containerAppEnvName'))]",
                 "configuration": {
                     "ingress": {
                         "external": true,
@@ -96,13 +96,7 @@
                             "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]"
                         }
                     ],
-                    "secrets": [
-                        {
-                            "name": "redisconnectionstring",
-                            "keyVaultUrl": "[concat('https://', variables('keyVaultName'), '.vault.azure.net/secrets/', 'redisconnectionstring')]",
-                            "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]"
-                        }
-                    ]
+                    "secrets": []
                 },
                 "template": {
                     "containers": [
@@ -116,7 +110,7 @@
                             "env": [
                                 {
                                     "name": "redisconnectionstring",
-                                    "secretRef": "redisconnectionstring"
+                                    "value": "[concat(reference(resourceId('Microsoft.Cache/Redis', variables('redisCacheName'))).hostName, ':6380,ssl=True,abortConnect=False')]"
                                 }
                             ]
                         }
@@ -131,6 +125,33 @@
                 "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]",
                 "[resourceId('Microsoft.KeyVault/vaults', variables('keyVaultName'))]",
                 "[resourceId('Microsoft.Cache/Redis', variables('redisCacheName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2022-04-01",
+            "name": "[guid(resourceId('Microsoft.Cache/Redis', variables('redisCacheName')), variables('managedIdentityName'), 'Redis Cache Contributor')]",
+            "properties": {
+                "roleDefinitionId": "[concat('/subscriptions/', subscription().subscriptionId, '/providers/Microsoft.Authorization/roleDefinitions/', 'e0f68234-74aa-48ed-b826-c38b57376e17')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName')), '2023-01-31').principalId]",
+                "principalType": "ServicePrincipal"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Cache/Redis', variables('redisCacheName'))]",
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]"
+            ]
+        },
+        {
+            "type": "Microsoft.Authorization/roleAssignments",
+            "apiVersion": "2022-04-01",
+            "name": "[guid(resourceGroup().id, 'acr-pull', variables('managedIdentityName'))]",
+            "properties": {
+                "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
+                "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))).principalId]",
+                "scope": "/subscriptions/1173a707-87ca-4aa8-a0ea-b1fc0a1a1609/resourcegroups/pixelboard"
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]"
             ]
         }
     ]

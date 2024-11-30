@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PixelBoard")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+50c4d4ef7024231a6546dd77dc4c9885af9ac9fe")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ac603e2e3b137aea2cd584310a5c25e233357db6")]
 [assembly: System.Reflection.AssemblyProductAttribute("PixelBoard")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PixelBoard")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -5,14 +5,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
-if (builder.Environment.IsDevelopment() && false)
+if (builder.Environment.IsProduction())
 {
-    Console.WriteLine("Using in-memory cache");
-    builder.Services.AddDistributedMemoryCache();
+    // Use ManagedIdentity to authenticate with Azure Redis
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = builder.Configuration["AzureRedis:ConnectionString"];
+        options.InstanceName = "PixelBoard_";
+    });
 }
 else
 {
-    Console.WriteLine("Using Redis cache");
     builder.Services.AddStackExchangeRedisCache(options =>
     {
         options.Configuration = "localhost:6379"; // Replace with your Redis connection string
