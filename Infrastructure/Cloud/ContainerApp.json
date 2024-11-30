@@ -10,7 +10,7 @@
     },
     "variables": {
         "location": "centralus",
-        "acrName": "[format('{0}acr', parameters('projectName'))]",
+        "acrName": "pixelboardacr",
         "storageAccountName": "[format('{0}store', parameters('projectName'))]",
         "keyVaultName": "[format('{0}kv', parameters('projectName'))]",
         "logAnalyticsName": "[format('{0}logs', parameters('projectName'))]",
