@@ -4,7 +4,7 @@ WORKDIR /src
 
 # Copy and restore dependencies
 COPY ["PixelBoard.csproj", "PixelBoard.csproj"]
-RUN dotnet restore "AutoContentAPI/AutoContentAPI.csproj"
+RUN dotnet restore "PixelBoard.csproj"
 
 # Copy the rest of the files and build
 COPY . .
