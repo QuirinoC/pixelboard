@@ -1,0 +1,92 @@
+﻿@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Hello!";
+}
+
+<div class="board" id="board"></div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
+    <script>
+        // Create a connection to the SignalR hub with automatic reconnect
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/boardHub")
+            .withAutomaticReconnect()
+            .build();
+
+        // Start the connection
+        async function start() {
+            try {
+                await connection.start();
+                console.log("SignalR Connected.");
+            } catch (err) {
+                console.error("Connection failed: ", err);
+                setTimeout(start, 5000); // Retry connection after 5 seconds
+            }
+        }
+
+        connection.onreconnecting((error) => {
+            console.warn(`Connection lost due to error "${error}". Reconnecting.`);
+        });
+
+        connection.onreconnected((connectionId) => {
+            console.log(`Connection reestablished. Connected with connectionId "${connectionId}".`);
+        });
+
+        connection.onclose(async () => {
+            console.error("Connection closed. Reconnecting...");
+            await start();
+        });
+
+        // Handle receiving a pixel update
+        connection.on("UpdateBoard", (x, y, color) => {
+            console.log(`Received pixel update: x=${x}, y=${y}, color=${color}`);
+            const cell = document.getElementById(`cell-${x}-${y}`);
+            if (cell) {
+                cell.style.backgroundColor = color;
+            }
+        });
+
+        // Handle receiving the full board state and initialize the board
+        connection.on("SyncBoard", (boardData) => {
+            console.log("Received board sync data:", boardData);
+            const board = document.getElementById("board");
+            board.innerHTML = ''; // Clear existing board
+
+            for (let x = 0; x < 20; x++) {
+                for (let y = 0; y < 50; y++) {
+                    const cell = document.createElement("div");
+                    cell.id = `cell-${x}-${y}`;
+                    cell.className = "cell";
+                    cell.style.backgroundColor = boardData[x][y];
+                    cell.addEventListener("click", () => {
+                        const color = prompt("Enter color:");
+                        connection.invoke("SendPixel", x, y, color).catch(err => {
+                            console.error(err.toString());
+                        });
+                    });
+                    board.appendChild(cell);
+                }
+            }
+        });
+
+        // Start the connection
+        start();
+    </script>
+    <style>
+        .board {
+            display: grid;
+            grid-template-columns: repeat(100, 10px);
+            /* Adjust size as needed */
+            grid-template-rows: repeat(100, 10px);
+        }
+
+        .cell {
+            width: 10px;
+            height: 10px;
+            border: 1px solid #ccc;
+            /* Optional: for cell borders */
+        }
+    </style>
+}
