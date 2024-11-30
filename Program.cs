@@ -1,4 +1,5 @@
 using Microsoft.Azure.SignalR;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,10 +8,19 @@ builder.Services.AddRazorPages();
 builder.Services.AddSignalR();
 if (builder.Environment.IsProduction())
 {
+    // Get redisconnectionstring from Env
+    var redisConnString = Environment.GetEnvironmentVariable("redisconnectionstring")
+        ?? builder.Configuration["redisconnectionstring"];
+
+    if (string.IsNullOrEmpty(redisConnString))
+    {
+        throw new RedisException("Redis connection string not found in environment variables or configuration");
+    }
+
     // Use ManagedIdentity to authenticate with Azure Redis
     builder.Services.AddStackExchangeRedisCache(options =>
     {
-        options.Configuration = builder.Configuration["AzureRedis:ConnectionString"];
+        options.Configuration = redisConnString;
         options.InstanceName = "PixelBoard_";
     });
 }

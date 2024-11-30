@@ -96,7 +96,13 @@
                             "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]"
                         }
                     ],
-                    "secrets": []
+                    "secrets": [
+                        {
+                            "name": "redisconnectionstring",
+                            "keyVaultUrl": "[concat('https://', variables('keyVaultName'), '.vault.azure.net/secrets/', 'redisconnectionstring')]",
+                            "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]"
+                        }
+                    ]
                 },
                 "template": {
                     "containers": [
@@ -110,7 +116,7 @@
                             "env": [
                                 {
                                     "name": "redisconnectionstring",
-                                    "value": "[concat(reference(resourceId('Microsoft.Cache/Redis', variables('redisCacheName'))).hostName, ':6380,ssl=True,abortConnect=False')]"
+                                    "secretRef": "redisconnectionstring"
                                 }
                             ]
                         }
