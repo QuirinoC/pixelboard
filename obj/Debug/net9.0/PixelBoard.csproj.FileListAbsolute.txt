@@ -112,3 +112,7 @@
 /Users/juanquirino/dev/PixelBoard/bin/Debug/net9.0/System.Memory.Data.dll
 /Users/juanquirino/dev/PixelBoard/bin/Debug/net9.0/System.Security.Cryptography.ProtectedData.dll
 /Users/juanquirino/dev/PixelBoard/bin/Debug/net9.0/runtimes/win/lib/netstandard2.0/System.Security.Cryptography.ProtectedData.dll
+/Users/juanquirino/dev/PixelBoard/bin/Debug/net9.0/Microsoft.Extensions.Caching.StackExchangeRedis.dll
+/Users/juanquirino/dev/PixelBoard/bin/Debug/net9.0/Pipelines.Sockets.Unofficial.dll
+/Users/juanquirino/dev/PixelBoard/bin/Debug/net9.0/StackExchange.Redis.dll
+/Users/juanquirino/dev/PixelBoard/obj/Debug/net9.0/PixelBoard.sourcelink.json

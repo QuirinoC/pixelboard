@@ -4,7 +4,12 @@
     ViewData["Title"] = "Hello!";
 }
 
+
+<p>Pick a color & Drag Left-Click! </p>
+<input type="color" id="colorPicker" value="#000000" style="margin-top: 10px;">
+
 <div class="board" id="board"></div>
+
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
@@ -14,6 +19,9 @@
             .withUrl("/boardHub")
             .withAutomaticReconnect()
             .build();
+
+        // Track mouse state
+        let isMouseDown = false;
 
         // Start the connection
         async function start() {
@@ -41,7 +49,6 @@
 
         // Handle receiving a pixel update
         connection.on("UpdateBoard", (x, y, color) => {
-            console.log(`Received pixel update: x=${x}, y=${y}, color=${color}`);
             const cell = document.getElementById(`cell-${x}-${y}`);
             if (cell) {
                 cell.style.backgroundColor = color;
@@ -54,18 +61,35 @@
             const board = document.getElementById("board");
             board.innerHTML = ''; // Clear existing board
 
-            for (let x = 0; x < 20; x++) {
-                for (let y = 0; y < 50; y++) {
+            for (let x = 0; x < @PixelBoardConstants.Rows; x++) {
+                for (let y = 0; y < @PixelBoardConstants.Cols; y++) {
                     const cell = document.createElement("div");
                     cell.id = `cell-${x}-${y}`;
                     cell.className = "cell";
                     cell.style.backgroundColor = boardData[x][y];
-                    cell.addEventListener("click", () => {
-                        const color = prompt("Enter color:");
+
+                    // Add event listeners for click and mouse events
+                    cell.addEventListener("mousedown", () => {
+                        isMouseDown = true;
+                        const color = document.getElementById("colorPicker").value;
                         connection.invoke("SendPixel", x, y, color).catch(err => {
                             console.error(err.toString());
                         });
                     });
+
+                    cell.addEventListener("mouseup", () => {
+                        isMouseDown = false;
+                    });
+
+                    cell.addEventListener("mousemove", () => {
+                        if (isMouseDown) {
+                            const color = document.getElementById("colorPicker").value;
+                            connection.invoke("SendPixel", x, y, color).catch(err => {
+                                console.error(err.toString());
+                            });
+                        }
+                    });
+
                     board.appendChild(cell);
                 }
             }
@@ -77,9 +101,12 @@
     <style>
         .board {
             display: grid;
-            grid-template-columns: repeat(100, 10px);
-            /* Adjust size as needed */
-            grid-template-rows: repeat(100, 10px);
+            grid-template-rows: repeat(
+        @PixelBoardConstants.Rows
+                    , 10px);
+            grid-template-columns: repeat(
+        @PixelBoardConstants.Cols
+                    , 10px);
         }
 
         .cell {

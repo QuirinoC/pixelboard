@@ -4,8 +4,22 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
-
 builder.Services.AddSignalR();
+if (builder.Environment.IsDevelopment() && false)
+{
+    Console.WriteLine("Using in-memory cache");
+    builder.Services.AddDistributedMemoryCache();
+}
+else
+{
+    Console.WriteLine("Using Redis cache");
+    builder.Services.AddStackExchangeRedisCache(options =>
+    {
+        options.Configuration = "localhost:6379"; // Replace with your Redis connection string
+        options.InstanceName = "PixelBoard_";
+    });
+}
+
 
 var app = builder.Build();
 
