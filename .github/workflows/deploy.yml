@@ -41,6 +41,11 @@ jobs:
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+    - name: Create Resource Group
+      run: |
+        az group create --name pixelboard --location centralus
+
+
     - name: Build and Push Docker Image
       run: |
         az acr build --registry autocontentacr --image pixelboard:latest .
