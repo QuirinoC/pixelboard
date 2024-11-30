@@ -16,7 +16,8 @@
         "logAnalyticsName": "[format('{0}logs', parameters('projectName'))]",
         "containerAppEnvName": "[format('{0}env', parameters('projectName'))]",
         "managedIdentityName": "[format('{0}id', parameters('projectName'))]",
-        "containerAppName": "[format('{0}app', parameters('projectName'))]"
+        "containerAppName": "[format('{0}app', parameters('projectName'))]",
+        "redisCacheName": "[format('{0}cache', parameters('projectName'))]"
     },
     "resources": [
         {
