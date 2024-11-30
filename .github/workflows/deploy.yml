@@ -1,0 +1,54 @@
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    if: contains(github.event.head_commit.message, '[infra]')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Deploy Infrastructure
+      run: |
+        az deployment group create \
+          --name pixelboard-infra-deployment \
+          --resource-group pixelboard \
+          --template-file Infrastructure/Cloud/Infra.json \
+          --parameters projectName=pixelboard
+
+  deploy-container-app:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: deploy-infrastructure
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Build and Push Docker Image
+      run: |
+        az acr build --registry ${{ secrets.ACR_NAME }} --image pixelboard:latest .
+
+    - name: Deploy Container App
+      run: |
+        az deployment group create \
+          --name pixelboard-deployment \
+          --resource-group pixelboard \
+          --template-file Infrastructure/Cloud/ContainerApp.json \
+          --parameters projectName=pixelboard

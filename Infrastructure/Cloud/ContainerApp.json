@@ -1,0 +1,96 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "projectName": {
+            "type": "string",
+            "defaultValue": "pixelboard",
+            "maxLength": 11
+        }
+    },
+    "variables": {
+        "location": "centralus",
+        "acrName": "[format('{0}acr', parameters('projectName'))]",
+        "storageAccountName": "[format('{0}store', parameters('projectName'))]",
+        "keyVaultName": "[format('{0}kv', parameters('projectName'))]",
+        "logAnalyticsName": "[format('{0}logs', parameters('projectName'))]",
+        "containerAppEnvName": "[format('{0}env', parameters('projectName'))]",
+        "managedIdentityName": "[format('{0}id', parameters('projectName'))]",
+        "containerAppName": "[format('{0}app', parameters('projectName'))]"
+    },
+    "resources": [
+        {
+            "type": "Microsoft.App/containerApps",
+            "apiVersion": "2023-05-01",
+            "name": "[variables('containerAppName')]",
+            "location": "[variables('location')]",
+            "identity": {
+                "type": "UserAssigned",
+                "userAssignedIdentities": {
+                    "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]": {}
+                }
+            },
+            "properties": {
+                "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', variables('containerAppEnvName'))]",
+                "configuration": {
+                    "ingress": {
+                        "external": true,
+                        "targetPort": 8080
+                    },
+                    "registries": [
+                        {
+                            "server": "[format('{0}.azurecr.io', variables('acrName'))]",
+                            "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]"
+                        }
+                    ],
+                    "secrets": [
+                        {
+                            "name": "redisConnectionString",
+                            "keyVaultUrl": "[concat('https://', variables('keyVaultName'), '.vault.azure.net/secrets/', 'redisConnectionString')]",
+                            "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]"
+                        }
+                    ]
+                },
+                "template": {
+                    "containers": [
+                        {
+                            "name": "app",
+                            "image": "[format('{0}.azurecr.io/pixelboard:latest', variables('acrName'))]",
+                            "resources": {
+                                "cpu": "1",
+                                "memory": "2Gi"
+                            },
+                            "env": [
+                                {
+                                    "name": "elevenlabsapikey",
+                                    "keyVaultUrl": "[concat('https://', variables('keyVaultName'), '.vault.azure.net/secrets/', 'redisConnectionString')]",
+                                    "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]"
+                                }
+                            ]
+                        }
+                    ],
+                    "scale": {
+                        "minReplicas": 0,
+                        "maxReplicas": 1
+                    }
+                }
+            },
+            "dependsOn": []
+        },
+        {
+            "type": "Microsoft.Cache/Redis",
+            "apiVersion": "2023-08-01",
+            "name": "[variables('redisCacheName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "sku": {
+                    "name": "Basic",
+                    "family": "C",
+                    "capacity": 0
+                },
+                "enableNonSslPort": false,
+                "minimumTlsVersion": "1.2"
+            }
+        }
+    ]
+}
