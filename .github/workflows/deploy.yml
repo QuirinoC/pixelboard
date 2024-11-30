@@ -43,7 +43,7 @@ jobs:
 
     - name: Build and Push Docker Image
       run: |
-        az acr build --registry autocontent --image pixelboard:latest .
+        az acr build --registry autocontentacr --image pixelboard:latest .
 
     - name: Deploy Container App
       run: |
