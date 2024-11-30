@@ -63,9 +63,8 @@
                             },
                             "env": [
                                 {
-                                    "name": "elevenlabsapikey",
-                                    "keyVaultUrl": "[concat('https://', variables('keyVaultName'), '.vault.azure.net/secrets/', 'redisConnectionString')]",
-                                    "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]"
+                                    "name": "redisConnectionString",
+                                    "secretRef": "redisConnectionString"
                                 }
                             ]
                         }
