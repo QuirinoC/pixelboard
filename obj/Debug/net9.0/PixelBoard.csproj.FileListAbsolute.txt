@@ -116,3 +116,4 @@
 /Users/juanquirino/dev/PixelBoard/bin/Debug/net9.0/Pipelines.Sockets.Unofficial.dll
 /Users/juanquirino/dev/PixelBoard/bin/Debug/net9.0/StackExchange.Redis.dll
 /Users/juanquirino/dev/PixelBoard/obj/Debug/net9.0/PixelBoard.sourcelink.json
+/Users/juanquirino/dev/PixelBoard/bin/Debug/net9.0/Infrastructure/Cloud/ContainerApp.json
