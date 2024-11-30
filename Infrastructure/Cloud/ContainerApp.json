@@ -46,8 +46,8 @@
                     ],
                     "secrets": [
                         {
-                            "name": "redisConnectionString",
-                            "keyVaultUrl": "[concat('https://', variables('keyVaultName'), '.vault.azure.net/secrets/', 'redisConnectionString')]",
+                            "name": "redisconnectionstring",
+                            "keyVaultUrl": "[concat('https://', variables('keyVaultName'), '.vault.azure.net/secrets/', 'redisconnectionstring')]",
                             "identity": "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('managedIdentityName'))]"
                         }
                     ]
@@ -63,8 +63,8 @@
                             },
                             "env": [
                                 {
-                                    "name": "redisConnectionString",
-                                    "secretRef": "redisConnectionString"
+                                    "name": "redisconnectionstring",
+                                    "secretRef": "redisconnectionstring"
                                 }
                             ]
                         }
