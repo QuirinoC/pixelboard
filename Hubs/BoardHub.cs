@@ -57,10 +57,12 @@ public class BoardHub : Hub
         lock (_lock)
         {
             board[x][y] = color;
-            SaveBoardToCache();
         }
 
-        await Clients.All.SendAsync("UpdateBoard", x, y, color);
+        _ = Task.Run(() => SaveBoardToCache());
+        _ = Task.Run(async () => Clients.All.SendAsync("UpdateBoard", x, y, color));
+
+        await Task.CompletedTask;
     }
 
     public override async Task OnConnectedAsync()

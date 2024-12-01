@@ -49,6 +49,7 @@
 
         // Handle receiving a pixel update
         connection.on("UpdateBoard", (x, y, color) => {
+            console.log(`Received pixel update: x=${x}, y=${y}, color=${color}`);
             const cell = document.getElementById(`cell-${x}-${y}`);
             if (cell) {
                 cell.style.backgroundColor = color;
@@ -103,9 +104,12 @@
                             // Set cell color
                             cell.style.backgroundColor = color;
 
-                            connection.invoke("SendPixel", x, y, color).catch(err => {
-                                console.error(err.toString());
-                            });
+                            connection.invoke("SendPixel", x, y, color)
+                                .catch(err => {
+                                    console.error(err.toString());
+                                });
+
+                            console.log("Updated board");
                         }
                     });
 
