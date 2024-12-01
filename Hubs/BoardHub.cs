@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 
 public class BoardHub : Hub
 {
+    private static int EventCount = 0;
+
     private static readonly object _lock = new object();
     private readonly IDistributedCache _cache;
     private const string BoardCacheKey = "MainBoard";
