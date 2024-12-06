@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Caching.Distributed;
+using System.Linq.Expressions;
 using System.Text.Json;
 using System.Threading.Tasks;
 
@@ -59,8 +60,20 @@ public class BoardHub : Hub
             board[x][y] = color;
         }
 
+        Console.WriteLine($"Event {EventCount++}: {x}, {y}, {color}");
+
         _ = Task.Run(() => SaveBoardToCache());
-        _ = Task.Run(async () => Clients.All.SendAsync("UpdateBoard", x, y, color));
+        await Task.Run(async () =>
+        {
+            try
+            {
+                await Clients.All.SendAsync("UpdateBoard", x, y, color);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error sending message: {ex.Message}");
+            }
+        });
 
         await Task.CompletedTask;
     }
