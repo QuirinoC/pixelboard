@@ -4,7 +4,7 @@ using System.Linq.Expressions;
 using System.Text.Json;
 using System.Threading.Tasks;
 
-public class BoardHub : Hub
+public class BoardHub : Hub, IDisposable
 {
     private static int EventCount = 0;
 
@@ -12,8 +12,11 @@ public class BoardHub : Hub
     private readonly IDistributedCache _cache;
     private const string BoardCacheKey = "MainBoard";
 
+    private List<Task> tasks = new List<Task>();
+
     public BoardHub(IDistributedCache cache)
     {
+        Console.WriteLine("Instantiated BoardHub");
         _cache = cache;
         LoadBoardFromCache();
     }
@@ -62,20 +65,11 @@ public class BoardHub : Hub
 
         Console.WriteLine($"Event {EventCount++}: {x}, {y}, {color}");
 
-        _ = Task.Run(() => SaveBoardToCache());
-        await Task.Run(async () =>
-        {
-            try
-            {
-                await Clients.All.SendAsync("UpdateBoard", x, y, color);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error sending message: {ex.Message}");
-            }
-        });
 
-        await Task.CompletedTask;
+        tasks.Add(Task.Run(() => SaveBoardToCache()));
+        tasks.Add(Clients.All.SendAsync("UpdateBoard", x, y, color));
+
+        await Task.WhenAll(tasks);
     }
 
     public override async Task OnConnectedAsync()
