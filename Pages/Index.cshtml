@@ -6,6 +6,7 @@
 
 <p>Pick a color & Drag Left-Click!</p>
 <input type="color" id="colorPicker" value="#000000" style="margin-top: 10px;">
+<span id="coords">Coords: (0, 0)</span>
 
 <canvas id="board"></canvas>
 
@@ -17,6 +18,7 @@
         const COLS = @PixelBoardConstants.Cols;
         const canvas = document.getElementById('board');
         const ctx = canvas.getContext('2d');
+        const coordsDisplay = document.getElementById('coords');
 
         // Set canvas dimensions
         canvas.width = COLS * PIXEL_SIZE;
@@ -24,6 +26,7 @@
 
         // Draw gridlines
         function drawGrid() {
+            return;
             ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.lineWidth = 1;
             for (let x = 0; x <= COLS; x++) {
@@ -80,18 +83,17 @@
         // Function to draw a pixel with fade-in effect
         function drawPixelWithFade(x, y, color) {
             let opacity = 0;
+            let count = 0;
             const fadeInInterval = setInterval(() => {
-                opacity += 0.01;
+                console.log(count++);
+                opacity += 0.0625;
                 if (opacity >= 1) {
                     opacity = 1;
                     clearInterval(fadeInInterval);
                 }
                 ctx.fillStyle = hexToRGBA(color, opacity);
+
                 ctx.fillRect(y * PIXEL_SIZE, x * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
-                // Redraw grid lines over pixel
-                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(y * PIXEL_SIZE, x * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
             }, 16); // Approximately 60 frames per second
         }
 
@@ -135,6 +137,7 @@
             if (isMouseDown) {
                 handleMouseEvent(e);
             }
+            updateCoordsDisplay(e);
         });
 
         canvas.addEventListener('mouseup', () => {
@@ -147,6 +150,7 @@
             isMouseDown = false;
             lastX = -1;
             lastY = -1;
+            coordsDisplay.textContent = 'Coords: (0, 0)';
         });
 
         function handleMouseEvent(e) {
@@ -165,10 +169,11 @@
             // Update the canvas immediately
             ctx.fillStyle = color;
             ctx.fillRect(y * PIXEL_SIZE, x * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+
             // Redraw grid lines over pixel
-            ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(y * PIXEL_SIZE, x * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+            //ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+            //ctx.lineWidth = 1;
+            //ctx.strokeRect(y * PIXEL_SIZE, x * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
 
             // Send the pixel to the server
             connection.invoke("SendPixel", x, y, color)
@@ -176,6 +181,18 @@
                     console.error(err.toString());
                 });
         }
+
+        function updateCoordsDisplay(e) {
+            const rect = canvas.getBoundingClientRect();
+            const x = Math.floor((e.clientY - rect.top) / PIXEL_SIZE);
+            const y = Math.floor((e.clientX - rect.left) / PIXEL_SIZE);
+            coordsDisplay.textContent = `Coords: (${x}, ${y})`;
+        }
+
+        // Prevent context menu on right-click
+        canvas.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+        });
 
         // Start the SignalR connection
         start();
