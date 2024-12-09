@@ -17,7 +17,6 @@ public class BoardHub : Hub, IDisposable
 
     public BoardHub(IDistributedCache cache)
     {
-        Console.WriteLine("Instantiated BoardHub");
         _cache = cache;
         tiles = new();
     }
@@ -58,14 +57,16 @@ public class BoardHub : Hub, IDisposable
 
         var cachedTileString = _cache.GetString(tileKey);
 
-        return
-            cachedTileString != null
-            ? new Tile(JsonSerializer.Deserialize<string[][]>(cachedTileString) ?? throw new InvalidOperationException("Failed to deserialize tile"))
-            {
-                X = x,
-                Y = y
-            }
-            : null;
+        if (cachedTileString == null)
+        {
+            return null;
+        }
+
+        return new Tile(JsonSerializer.Deserialize<string[][]>(cachedTileString) ?? throw new InvalidOperationException("Failed to deserialize tile"))
+        {
+            X = x,
+            Y = y
+        };
     }
 
     private void SaveTileToCache(Tile tile)
@@ -77,7 +78,12 @@ public class BoardHub : Hub, IDisposable
 
     public async Task SendPixel(int x, int y, string color)
     {
+        // Get all keys from cache
+        var keys = _cache.Get("*");
+
         var tile = GetTileOrDefault(x, y);
+
+        Console.WriteLine($"Tile: {tile.X}, {tile.Y}");
 
         // Relative coords
         var relative_x = x % PixelBoardConstants.TileRows;
@@ -100,6 +106,14 @@ public class BoardHub : Hub, IDisposable
         tasks.Add(Clients.All.SendAsync("UpdateBoard", x, y, color));
 
         await Task.WhenAll(tasks);
+    }
+
+    public string[][] RequestTile(int x, int y)
+    {
+        return GetTileOrDefault(
+            x * PixelBoardConstants.TileRows,
+            y * PixelBoardConstants.TileCols)
+        .Pixels; // juanito - why not have another fn that takes tile coords?
     }
 
     public override async Task OnConnectedAsync()
