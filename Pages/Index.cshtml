@@ -1,10 +1,10 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Hello!";
+    ViewData["Title"] = "Infinite Canvas";
 }
 
-<p>Pick a color & Drag Left-Click!</p>
+<p>Pick a color & Drag Left-Click to Draw! Right-Click to Pan.</p>
 <input type="color" id="colorPicker" value="#000000" style="margin-top: 10px;">
 <span id="coords">Coords: (0, 0)</span>
 
@@ -37,29 +37,36 @@
         function drawGrid() {
             ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
             ctx.lineWidth = 0.5; // Thinner borders
-            for (let x = 0; x <= canvas.width / PIXEL_SIZE; x++) {
-                ctx.beginPath();
-                ctx.moveTo(x * PIXEL_SIZE, 0);
-                ctx.lineTo(x * PIXEL_SIZE, canvas.height);
-                ctx.stroke();
+
+            const startXGrid = Math.floor((-offsetX) / PIXEL_SIZE);
+            const endXGrid = Math.floor((-offsetX + canvas.width) / PIXEL_SIZE);
+            const startYGrid = Math.floor((-offsetY) / PIXEL_SIZE);
+            const endYGrid = Math.floor((-offsetY + canvas.height) / PIXEL_SIZE);
+
+            ctx.beginPath();
+            for (let x = startXGrid; x <= endXGrid; x++) {
+                ctx.moveTo(x * PIXEL_SIZE + offsetX, 0);
+                ctx.lineTo(x * PIXEL_SIZE + offsetX, canvas.height);
             }
-            for (let y = 0; y <= canvas.height / PIXEL_SIZE; y++) {
-                ctx.beginPath();
-                ctx.moveTo(0, y * PIXEL_SIZE);
-                ctx.lineTo(canvas.width, y * PIXEL_SIZE);
-                ctx.stroke();
+            for (let y = startYGrid; y <= endYGrid; y++) {
+                ctx.moveTo(0, y * PIXEL_SIZE + offsetY);
+                ctx.lineTo(canvas.width, y * PIXEL_SIZE + offsetY);
             }
+            ctx.stroke();
         }
 
         // Load or create a tile
         function getTile(col, row) {
             const key = `${col},${row}`;
             if (!tiles.has(key)) {
-                const tileCanvas = new OffscreenCanvas(TILE_SIZE * PIXEL_SIZE, TILE_SIZE * PIXEL_SIZE);
+                // Create an off-screen canvas for the tile
+                const tileCanvas = document.createElement('canvas');
+                tileCanvas.width = TILE_SIZE * PIXEL_SIZE;
+                tileCanvas.height = TILE_SIZE * PIXEL_SIZE;
                 const tileCtx = tileCanvas.getContext('2d');
                 // Initialize tile (e.g., fill with default color)
                 tileCtx.fillStyle = '#FFFFFF';
-                tileCtx.fillRect(0, 0, TILE_SIZE * PIXEL_SIZE, TILE_SIZE * PIXEL_SIZE);
+                tileCtx.fillRect(0, 0, tileCanvas.width, tileCanvas.height);
                 tiles.set(key, { canvas: tileCanvas, ctx: tileCtx });
             }
             return tiles.get(key);
@@ -67,21 +74,26 @@
 
         // Draw visible tiles
         function drawTiles() {
-            const startCol = Math.floor(-offsetX / (TILE_SIZE * PIXEL_SIZE));
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const startCol = Math.floor((-offsetX) / (TILE_SIZE * PIXEL_SIZE));
             const endCol = Math.floor((-offsetX + canvas.width) / (TILE_SIZE * PIXEL_SIZE));
-            const startRow = Math.floor(-offsetY / (TILE_SIZE * PIXEL_SIZE));
+            const startRow = Math.floor((-offsetY) / (TILE_SIZE * PIXEL_SIZE));
             const endRow = Math.floor((-offsetY + canvas.height) / (TILE_SIZE * PIXEL_SIZE));
 
             for (let col = startCol; col <= endCol; col++) {
                 for (let row = startRow; row <= endRow; row++) {
                     const tile = getTile(col, row);
-                    ctx.drawImage(tile.canvas, col * TILE_SIZE * PIXEL_SIZE + offsetX, row * TILE_SIZE * PIXEL_SIZE + offsetY);
+                    const xPos = col * TILE_SIZE * PIXEL_SIZE + offsetX;
+                    const yPos = row * TILE_SIZE * PIXEL_SIZE + offsetY;
+                    ctx.drawImage(tile.canvas, xPos, yPos);
                 }
             }
+
+            drawGrid();
         }
 
-        // Initial draw of the grid and tiles
-        drawGrid();
+        // Initial draw of the tiles
         drawTiles();
 
         // Create a connection to the SignalR hub with automatic reconnect
@@ -116,10 +128,10 @@
 
         // Function to draw a pixel with fade-in effect
         function drawPixelWithFade(x, y, color) {
-            const col = Math.floor(x / TILE_SIZE);
-            const row = Math.floor(y / TILE_SIZE);
-            const tileX = x % TILE_SIZE;
-            const tileY = y % TILE_SIZE;
+            const col = Math.floor(y / TILE_SIZE);
+            const row = Math.floor(x / TILE_SIZE);
+            const tileX = y % TILE_SIZE;
+            const tileY = x % TILE_SIZE;
             const tile = getTile(col, row);
 
             let opacity = 0;
@@ -130,9 +142,21 @@
                     clearInterval(fadeInInterval);
                 }
                 tile.ctx.fillStyle = hexToRGBA(color, opacity);
-                tile.ctx.fillRect(tileY * PIXEL_SIZE + 0.5, tileX * PIXEL_SIZE + 0.5, PIXEL_SIZE - 1, PIXEL_SIZE - 1);
+                tile.ctx.fillRect(tileX * PIXEL_SIZE, tileY * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
                 drawTiles();
             }, 16); // Approximately 60 frames per second
+        }
+
+        function drawPixelInstant(x, y, color) {
+            const col = Math.floor(y / TILE_SIZE);
+            const row = Math.floor(x / TILE_SIZE);
+            const tileX = y % TILE_SIZE;
+            const tileY = x % TILE_SIZE;
+            const tile = getTile(col, row);
+
+            tile.ctx.fillStyle = color;
+            tile.ctx.fillRect(tileX * PIXEL_SIZE, tileY * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+            drawTiles();
         }
 
         // Helper function to convert hex color to rgba
@@ -156,12 +180,10 @@
                 for (let y = 0; y < boardData[x].length; y++) {
                     const color = boardData[x][y];
                     if (color && color !== "#FFFFFF") {
-                        drawPixelWithFade(x, y, color);
+                        drawPixelInstant(x, y, color);
                     }
                 }
             }
-            // Redraw grid after filling the board
-            drawGrid();
         });
 
         // Mouse event handlers
@@ -170,7 +192,7 @@
                 isRightMouseDown = true;
                 startX = e.clientX - offsetX;
                 startY = e.clientY - offsetY;
-            } else {
+            } else if (e.button === 0) { // Left-click
                 isMouseDown = true;
                 handleMouseEvent(e);
             }
@@ -180,8 +202,6 @@
             if (isRightMouseDown) {
                 offsetX = e.clientX - startX;
                 offsetY = e.clientY - startY;
-                ctx.setTransform(1, 0, 0, 1, offsetX, offsetY);
-                drawGrid();
                 drawTiles();
             } else if (isMouseDown) {
                 handleMouseEvent(e);
@@ -189,11 +209,15 @@
             updateCoordsDisplay(e);
         });
 
-        canvas.addEventListener('mouseup', () => {
-            isMouseDown = false;
-            isRightMouseDown = false;
-            lastX = -1;
-            lastY = -1;
+        canvas.addEventListener('mouseup', (e) => {
+            if (e.button === 2) {
+                isRightMouseDown = false;
+            }
+            if (e.button === 0) {
+                isMouseDown = false;
+                lastX = -1;
+                lastY = -1;
+            }
         });
 
         canvas.addEventListener('mouseleave', () => {
@@ -210,22 +234,21 @@
             const y = Math.floor((e.clientX - rect.left - offsetX) / PIXEL_SIZE);
 
             if (x === lastX && y === lastY) return;
-            if (x < 0 || x >= canvas.height / PIXEL_SIZE || y < 0 || y >= canvas.width / PIXEL_SIZE) return;
-
             lastX = x;
             lastY = y;
 
             const color = document.getElementById("colorPicker").value;
 
-            // Update the canvas immediately
-            const col = Math.floor(x / TILE_SIZE);
-            const row = Math.floor(y / TILE_SIZE);
-            const tileX = x % TILE_SIZE;
-            const tileY = y % TILE_SIZE;
+            // Update the tile data
+            const col = Math.floor(y / TILE_SIZE);
+            const row = Math.floor(x / TILE_SIZE);
+            const tileX = y % TILE_SIZE;
+            const tileY = x % TILE_SIZE;
             const tile = getTile(col, row);
 
             tile.ctx.fillStyle = color;
-            tile.ctx.fillRect(tileY * PIXEL_SIZE + 0.5, tileX * PIXEL_SIZE + 0.5, PIXEL_SIZE - 1, PIXEL_SIZE - 1);
+            tile.ctx.fillRect(tileX * PIXEL_SIZE, tileY * PIXEL_SIZE, PIXEL_SIZE, PIXEL_SIZE);
+
             drawTiles();
 
             // Send the pixel to the server
@@ -249,6 +272,13 @@
 
         // Start the SignalR connection
         start();
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            drawTiles();
+        });
     </script>
     <style>
         canvas#board {
@@ -256,6 +286,7 @@
             margin: 20px auto;
             display: block;
             image-rendering: pixelated;
+            cursor: crosshair;
         }
     </style>
 }
