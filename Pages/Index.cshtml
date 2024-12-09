@@ -20,8 +20,8 @@
         const coordsDisplay = document.getElementById('coords');
 
         // Set initial canvas dimensions
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        canvas.width = window.innerWidth / 2;
+        canvas.height = window.innerHeight / 2;
 
         // Track mouse state
         let isMouseDown = false;
@@ -228,6 +228,10 @@
             coordsDisplay.textContent = 'Coords: (0, 0)';
         });
 
+        function mod(n, m) {
+            return ((n % m) + m) % m;
+        }
+
         function handleMouseEvent(e) {
             const rect = canvas.getBoundingClientRect();
             const x = Math.floor((e.clientY - rect.top - offsetY) / PIXEL_SIZE);
@@ -242,8 +246,8 @@
             // Update the tile data
             const col = Math.floor(y / TILE_SIZE);
             const row = Math.floor(x / TILE_SIZE);
-            const tileX = y % TILE_SIZE;
-            const tileY = x % TILE_SIZE;
+            const tileX = mod(y, TILE_SIZE);
+            const tileY = mod(x, TILE_SIZE);
             const tile = getTile(col, row);
 
             tile.ctx.fillStyle = color;

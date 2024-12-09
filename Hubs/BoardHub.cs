@@ -61,6 +61,10 @@ public class BoardHub : Hub, IDisposable
         return
             cachedTileString != null
             ? new Tile(JsonSerializer.Deserialize<string[][]>(cachedTileString) ?? throw new InvalidOperationException("Failed to deserialize tile"))
+            {
+                X = x,
+                Y = y
+            }
             : null;
     }
 
@@ -117,15 +121,26 @@ public class BoardHub : Hub, IDisposable
         if (x_coord < 0) x--;
         if (y_coord < 0) y--;
 
-        x = Math.Abs(x);
-        y = Math.Abs(y);
-
         Console.WriteLine($"Tile coords: {x}, {y}");
 
-        return
-            GetTileFromLocal(x, y)
-            ?? GetTileFromCache(x, y)
-            ?? new Tile(InitializeBoard(PixelBoardConstants.TileRows, PixelBoardConstants.TileCols));
+        var localTile = GetTileFromLocal(x, y);
+        if (localTile != null)
+        {
+            return localTile;
+        }
+
+        var cacheTile = GetTileFromCache(x, y);
+        if (cacheTile != null)
+        {
+            tiles.Add(GetTilePartitionKey(x, y), cacheTile);
+            return cacheTile;
+        }
+
+        return new Tile(InitializeBoard(PixelBoardConstants.TileRows, PixelBoardConstants.TileCols))
+        {
+            X = x,
+            Y = y
+        };
     }
 
     private class Tile
