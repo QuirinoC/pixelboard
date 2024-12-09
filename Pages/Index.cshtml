@@ -79,6 +79,10 @@
                 const tileMatrix = connection.invoke("RequestTile", row, col).then((tileData) => {
                     console.log("Received tile data.");
                     const tileCanvas = document.createElement('canvas');
+
+                    // Add border to canvas
+                    tileCanvas.style.border = "1px solid #000";
+
                     tileCanvas.width = TILE_SIZE * PIXEL_SIZE;
                     tileCanvas.height = TILE_SIZE * PIXEL_SIZE;
                     const tileCtx = tileCanvas.getContext('2d');

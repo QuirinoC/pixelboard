@@ -38,7 +38,7 @@ public class BoardHub : Hub, IDisposable
         return board;
     }
 
-    private string GetTilePartitionKey(int x, int y)
+    private static string GetTilePartitionKey(int x, int y)
     {
         return $"{BoardCacheKey}_{x}_{y}";
     }
@@ -78,16 +78,13 @@ public class BoardHub : Hub, IDisposable
 
     public async Task SendPixel(int x, int y, string color)
     {
-        // Get all keys from cache
-        var keys = _cache.Get("*");
-
         var tile = GetTileOrDefault(x, y);
 
-        Console.WriteLine($"Tile: {tile.X}, {tile.Y}");
+        Console.WriteLine($"[SendPixel] Tile: {tile.X}, {tile.Y}");
 
         // Relative coords
-        var relative_x = x % PixelBoardConstants.TileRows;
-        var relative_y = y % PixelBoardConstants.TileCols;
+        var relative_x = Mod(x, PixelBoardConstants.TileRows);
+        var relative_y = Mod(y, PixelBoardConstants.TileCols);
 
         relative_x = Math.Abs(relative_x);
         relative_y = Math.Abs(relative_y);
@@ -98,9 +95,6 @@ public class BoardHub : Hub, IDisposable
         {
             tile.Pixels[relative_x][relative_y] = color;
         }
-
-        Console.WriteLine($"Event {EventCount++}: {x}, {y}, {color}");
-
 
         tasks.Add(Task.Run(() => SaveTileToCache(tile)));
         tasks.Add(Clients.All.SendAsync("UpdateBoard", x, y, color));
@@ -123,38 +117,59 @@ public class BoardHub : Hub, IDisposable
         await base.OnConnectedAsync();
     }
 
-    private Tile GetTileOrDefault(int x_coord, int y_coord)
+    private Tile? GetTileOrDefault(int x_coord, int y_coord)
     {
-        Console.WriteLine($"GetTileOrDefault: {x_coord}, {y_coord}");
+        TileSource tileSource = TileSource.Default;
 
         // Convert coords to tile coords
-        var x = x_coord / PixelBoardConstants.TileRows;
-        var y = y_coord / PixelBoardConstants.TileCols;
+        var x = (int)Math.Floor((double)x_coord / PixelBoardConstants.TileRows);
+        var y = (int)Math.Floor((double)y_coord / PixelBoardConstants.TileCols);
 
         // Handle negative coords
-        if (x_coord < 0) x--;
-        if (y_coord < 0) y--;
+        //if (x_coord < 0) x--;
+        //if (y_coord < 0) y--;
 
-        Console.WriteLine($"Tile coords: {x}, {y}");
+        Tile? tile = null;
 
-        var localTile = GetTileFromLocal(x, y);
-        if (localTile != null)
+        // Try to get the tile from local cache
+        if ((tile = GetTileFromLocal(x, y)) != null)
         {
-            return localTile;
+            tileSource = TileSource.Local;
+        }
+        // Try to get the tile from distributed cache
+        else if ((tile = GetTileFromCache(x, y)) != null)
+        {
+            tileSource = TileSource.Cache;
+        }
+        // Create a new tile if not found in either cache
+        else
+        {
+            tileSource = TileSource.Default;
+            tile = new Tile(InitializeBoard(PixelBoardConstants.TileRows, PixelBoardConstants.TileCols))
+            {
+                X = x,
+                Y = y
+            };
         }
 
-        var cacheTile = GetTileFromCache(x, y);
-        if (cacheTile != null)
-        {
-            tiles.Add(GetTilePartitionKey(x, y), cacheTile);
-            return cacheTile;
-        }
+        // Persist to local
+        tiles[GetTilePartitionKey(x, y)] = tile;
 
-        return new Tile(InitializeBoard(PixelBoardConstants.TileRows, PixelBoardConstants.TileCols))
-        {
-            X = x,
-            Y = y
-        };
+        Console.WriteLine($"Tile {x}, {y} for coords {x_coord}, {y_coord} obtained from {tileSource}");
+
+        return tile;
+    }
+
+    private int Mod(int n, int m)
+    {
+        return ((n % m) + m) % m;
+    }
+
+    private enum TileSource
+    {
+        Local,
+        Cache,
+        Default
     }
 
     private class Tile
