@@ -8,7 +8,7 @@ public class BoardHub : Hub, IDisposable
 {
     private static int EventCount = 0;
 
-    private static readonly object _lock = new object();
+    private static readonly object _lock = new();
     private readonly IDistributedCache _cache;
     private const string BoardCacheKey = "MainBoard";
 
@@ -46,7 +46,7 @@ public class BoardHub : Hub, IDisposable
         }
         else
         {
-            board = InitializeBoard(PixelBoardConstants.Rows, PixelBoardConstants.Cols);
+            board = InitializeBoard(PixelBoardConstants.TileRows, PixelBoardConstants.TileCols);
         }
     }
 
@@ -58,6 +58,8 @@ public class BoardHub : Hub, IDisposable
 
     public async Task SendPixel(int x, int y, string color)
     {
+        _ = board ?? throw new InvalidOperationException("Board not initialized");
+
         lock (_lock)
         {
             board[x][y] = color;
