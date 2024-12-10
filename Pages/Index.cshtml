@@ -1,16 +1,21 @@
 ﻿@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Infinite Canvas";
+    ViewData["Title"] = "PixelBoard!";
 }
 
-<p>Pick a color & Drag Left-Click to Draw! Right-Click to Pan.</p>
-<input type="color" id="colorPicker" value="#000000" style="margin-top: 10px;">
-<span id="coords">Pointer coords: (0, 0)</span>
-<span id="viewCoords">View Center: (0, 0)</span>
-<span id="viewTileCoords">Tile Coords: (0, 0)</span>
+<div id="menu"
+    style="z-index: 10; position: absolute; top: 10px; left: 10px; background: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 5px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);">
+    <p>Pick a color & Drag Left-Click to Draw! Right-Click to Pan.</p>
+    <input type="color" id="colorPicker" value="#000000" style="margin-top: 10px;">
+    <span id="coords">Pointer coords: (0, 0)</span>
+    <span id="viewCoords">View Center: (0, 0)</span>
+    <span id="viewTileCoords">Tile Coords: (0, 0)</span>
+</div>
 
-<canvas id="board"></canvas>
+<div id="canvasContainer" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+    <canvas id="board" style="width: 100%; height: 100%;"></canvas>
+</div>
 
 @section Scripts {
     <script src=" https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/5.0.11/signalr.min.js"></script>
@@ -34,8 +39,8 @@
         var neighborLock = false;
 
         // Set initial canvas dimensions
-        canvas.width = window.innerWidth / 2;
-        canvas.height = window.innerHeight / 2;
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
         // Track mouse state
         let isMouseDown = false;
